@@ -1,5 +1,8 @@
 package com.github.tartaricacid.touhoulittlemaid.entity.item;
 
+import com.github.tartaricacid.touhoulittlemaid.capability.PowerCapability;
+import com.github.tartaricacid.touhoulittlemaid.capability.PowerCapabilityProvider;
+import com.github.tartaricacid.touhoulittlemaid.entity.favorability.FavorabilityManager;
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
 import com.github.tartaricacid.touhoulittlemaid.init.InitItems;
 import net.minecraft.client.Minecraft;
@@ -14,6 +17,7 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.MenuProvider;
@@ -28,6 +32,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -61,6 +67,7 @@ public class EntityBroom extends AbstractEntityFromItem implements HasCustomInve
     private boolean keyBack = false;
     private boolean keyLeft = false;
     private boolean keyRight = false;
+    private boolean keyJump = false;
 
     public EntityBroom(EntityType<EntityBroom> entityType, Level worldIn) {
         super(entityType, worldIn);
@@ -91,6 +98,11 @@ public class EntityBroom extends AbstractEntityFromItem implements HasCustomInve
         return Minecraft.getInstance().options.keyRight.isDown();
     }
 
+    @OnlyIn(Dist.CLIENT)
+    private static boolean keySpace() {
+        return Minecraft.getInstance().options.keyJump.isDown();
+    }
+
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
@@ -117,6 +129,45 @@ public class EntityBroom extends AbstractEntityFromItem implements HasCustomInve
 
     @Override
     public void travel(Vec3 vec3) {
+        AABB aabb = this.getBoundingBox();
+        int minX = Mth.floor(aabb.minX);
+        int maxX = Mth.ceil(aabb.maxX);
+        int y = Mth.floor(aabb.minY);
+        int minZ = Mth.floor(aabb.minZ);
+        int maxZ = Mth.ceil(aabb.maxZ);
+        boolean flag1 = false;
+        boolean flag2 = false;
+        boolean flag3 = false;
+        BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
+
+        checkLoop1:
+        for (int posX = minX; posX < maxX; posX++) {
+            for (int posZ = minZ; posZ < maxZ; posZ++) {
+                blockPos.set(posX, y - 1, posZ);
+                BlockState blockState = this.level.getBlockState(blockPos);
+                if (blockState.entityCanStandOn(this.level, blockPos, this)) {
+                    flag2 = flag1 = true;
+                    break checkLoop1;
+                }
+                FluidState fluidState = this.level.getFluidState(blockPos);
+                if (!fluidState.isEmpty()) {
+                    flag2 = true;
+                }
+            }
+        }
+
+        checkLoop2:
+        for (int posX = minX; posX < maxX; posX++) {
+            for (int posZ = minZ; posZ < maxZ; posZ++) {
+                blockPos.set(posX, y, posZ);
+                FluidState fluidState = this.level.getFluidState(blockPos);
+                if (!fluidState.isEmpty()) {
+                    flag3 = true;
+                    break checkLoop2;
+                }
+            }
+        }
+        
         Entity entity = this.getControllingPassenger();
         if (entity instanceof Player player && this.isVehicle() && this.hasPassenger(e -> e instanceof EntityMaid)) {
             if (level.isClientSide) {
@@ -126,22 +177,63 @@ public class EntityBroom extends AbstractEntityFromItem implements HasCustomInve
                 keyBack = keyBack();
                 keyLeft = keyLeft();
                 keyRight = keyRight();
+                keyJump = keySpace();
             }
 
-            // 按键控制扫帚各个方向速度
-            float strafe = keyLeft ? 0.5f : (keyRight ? -0.5f : 0);
-            float vertical = keyForward ? -(player.getXRot() - 10) / 22.5f : 0;
-            float forward = keyForward ? 3 : (keyBack ? -0.5f : 0);
+            this.setOnGround(true);
 
-            this.moveRelative(0.02f, new Vec3(strafe, vertical, forward));
+            FavorabilityManager fManager = ((EntityMaid) this.getPassengers().get(1)).getFavorabilityManager();
+    
+            boolean flag4 = true;
+            if (!flag1) {
+                float powerRequired = fManager.getBroomPowerCost();
+                PowerCapability power = player.getCapability(PowerCapabilityProvider.POWER_CAP, null).orElseThrow(null);
+                flag4 = power.get() >= powerRequired;
+                power.min(powerRequired);
+            }
+            
+            double factorMu = fManager.getBroomFrictionFactor();
+            this.setDeltaMovement(this.getDeltaMovement().multiply(factorMu, factorMu, factorMu));
+            
+            // 施加上下晃动
+            this.addDeltaMovement(new Vec3(0, (0.0035 + 0.0005 * fManager.getLevel()) * Math.sin(this.tickCount * Math.PI / 30), 0));
+            
+            if (!flag2) {
+                this.addDeltaMovement(new Vec3(0, flag4? -fManager.getBroomDownShiftingVelocity(): -0.1, 0));
+            }
+
+            if (flag3) {
+                this.addDeltaMovement(new Vec3(0, 0.05, 0));
+            }
+            
+            if (flag1 || flag4) {
+                // 按键控制扫帚各个方向速度
+                float forward = (keyForward ? 0.8f : 0) - (keyBack ? 0.4f : 0);
+                float strafe = (keyLeft ? 0.3f : 0) - (keyRight ? 0.3f : 0);
+                float vertical = keyJump ? 0.4f : 0;
+                
+                Vec3 vec31 = new Vec3(strafe, 0.0D, forward);
+                vec31 = vec31.xRot((float) (-player.getXRot() * Math.PI / 400)).add(0, vertical, 0);
+                
+                this.moveRelative(fManager.getBroomVelocity(), vec31);
+            }
             this.move(MoverType.SELF, this.getDeltaMovement());
             return;
         }
-        if (!this.onGround()) {
+        this.setXRot(0);
+
+        // 施加上下晃动
+        this.addDeltaMovement(new Vec3(0, 0.003 * Math.sin(this.tickCount * Math.PI / 30), 0));
+
+        if (!flag2) {
             // 玩家没有坐在扫帚上，那就让它掉下来
-            super.travel(new Vec3(0, -0.3f, 0));
-            return;
+            vec3 = vec3.add(0, -0.3, 0);
         }
+
+        if (flag3) {
+            vec3 = vec3.add(0, 0.15, 0);
+        }
+
         super.travel(vec3);
     }
 
@@ -178,11 +270,6 @@ public class EntityBroom extends AbstractEntityFromItem implements HasCustomInve
         // 记得将 fall distance 设置为 0，否则会摔死
         this.fallDistance = 0;
 
-        // 施加上下晃动
-        if (!this.onGround()) {
-            this.addDeltaMovement(new Vec3(0, 0.01 * Math.sin(this.tickCount * Math.PI / 18), 0));
-        }
-
         // 与旋转有关系的一堆东西，用来控制扫帚朝向
         this.yRotO = this.yBodyRot = this.yHeadRot = this.getYRot();
         this.setRot(player.getYRot(), player.getXRot());
@@ -202,7 +289,7 @@ public class EntityBroom extends AbstractEntityFromItem implements HasCustomInve
                     xOffset = -0.35;
                 }
             }
-            Vec3 offset = new Vec3(xOffset, yOffset, 0).yRot((float) (-this.getYRot() * Math.PI / 180 - Math.PI / 2));
+            Vec3 offset = new Vec3(xOffset, yOffset, 0).yRot((float) (-this.getYRot() * Math.PI / 180 - Math.PI / 2)).xRot((float) (-this.getXRot() * Math.PI / 810));
             moveFunction.accept(passenger, this.getX() + offset.x, this.getY() + offset.y, this.getZ() + offset.z);
         }
     }

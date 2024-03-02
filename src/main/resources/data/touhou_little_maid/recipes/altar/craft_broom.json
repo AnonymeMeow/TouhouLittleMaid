@@ -1,0 +1,33 @@
+{
+    "type": "touhou_little_maid:altar_crafting",
+    "output": {
+      "type": "minecraft:item",
+      "nbt": {
+        "Item": {
+          "id": "touhou_little_maid:broom",
+          "Count": 1
+        }
+      }
+    },
+    "power": 0.3,
+    "ingredients": [
+      {
+        "item": "minecraft:stick"
+      },
+      {
+        "item": "minecraft:stick"
+      },
+      {
+        "item": "minecraft:wheat"
+      },
+      {
+        "item": "minecraft:ghast_tear"
+      },
+      {
+        "item": "minecraft:phantom_membrane"
+      },
+      {
+        "item": "minecraft:wheat"
+      }
+    ]
+  }

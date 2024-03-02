@@ -131,7 +131,7 @@ public class BroomModel extends EntityModel<EntityBroom> {
     public void setupAnim(EntityBroom broom, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
         all.yRot = netHeadYaw * ((float) Math.PI / 180F);
         if (broom.isVehicle()) {
-            all.xRot = headPitch * ((float) Math.PI / 180F) / 10;
+            all.xRot = headPitch * ((float) Math.PI / 180F) / 4;
         }
     }
 

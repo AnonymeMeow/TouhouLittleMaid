@@ -35,6 +35,26 @@ public class FavorabilityManager {
     private static final int LEVEL_1_ATTACK_DAMAGE = 2;
     private static final int LEVEL_2_ATTACK_DAMAGE = 5;
     private static final int LEVEL_3_ATTACK_DAMAGE = 10;
+    
+    private static final float LEVEL_0_BROOM_COST = 0.0001f;
+    private static final float LEVEL_1_BROOM_COST = 0.00007f;
+    private static final float LEVEL_2_BROOM_COST = 0.00004f;
+    private static final float LEVEL_3_BROOM_COST = 0.00001f;
+    
+    private static final double LEVEL_0_BROOM_MU = 0.95;
+    private static final double LEVEL_1_BROOM_MU = 0.9;
+    private static final double LEVEL_2_BROOM_MU = 0.75;
+    private static final double LEVEL_3_BROOM_MU = 0.5;
+    
+    private static final double LEVEL_0_BROOM_VELOC_DOWN = 0.03;
+    private static final double LEVEL_1_BROOM_VELOC_DOWN = 0.02;
+    private static final double LEVEL_2_BROOM_VELOC_DOWN = 0.01;
+    private static final double LEVEL_3_BROOM_VELOC_DOWN = 0;
+    
+    private static final float LEVEL_0_BROOM_VELOC = 0.08f;
+    private static final float LEVEL_1_BROOM_VELOC = 0.17f;
+    private static final float LEVEL_2_BROOM_VELOC = 0.45f;
+    private static final float LEVEL_3_BROOM_VELOC = 1f;
 
     private static final String TAG_NAME = "FavorabilityManagerCounter";
 
@@ -148,6 +168,58 @@ public class FavorabilityManager {
             default -> {
                 return LEVEL_0_ATTACK_DAMAGE;
             }
+        }
+    }
+
+    public float getBroomPowerCost() {
+        switch (getLevel()) {
+        case LEVEL_1:
+            return LEVEL_1_BROOM_COST;
+        case LEVEL_2:
+            return LEVEL_2_BROOM_COST;
+        case LEVEL_3:
+            return LEVEL_3_BROOM_COST;
+        default:
+            return LEVEL_0_BROOM_COST;
+        }
+    }
+
+    public double getBroomFrictionFactor() {
+        switch (getLevel()) {
+        case LEVEL_1:
+            return LEVEL_1_BROOM_MU;
+        case LEVEL_2:
+            return LEVEL_2_BROOM_MU;
+        case LEVEL_3:
+            return LEVEL_3_BROOM_MU;
+        default:
+            return LEVEL_0_BROOM_MU;
+        }
+    }
+
+    public double getBroomDownShiftingVelocity() {
+        switch (getLevel()) {
+        case LEVEL_1:
+            return LEVEL_1_BROOM_VELOC_DOWN;
+        case LEVEL_2:
+            return LEVEL_2_BROOM_VELOC_DOWN;
+        case LEVEL_3:
+            return LEVEL_3_BROOM_VELOC_DOWN;
+        default:
+            return LEVEL_0_BROOM_VELOC_DOWN;
+        }
+    }
+
+    public float getBroomVelocity() {
+        switch (getLevel()) {
+        case LEVEL_1:
+            return LEVEL_1_BROOM_VELOC;
+        case LEVEL_2:
+            return LEVEL_2_BROOM_VELOC;
+        case LEVEL_3:
+            return LEVEL_3_BROOM_VELOC;
+        default:
+            return LEVEL_0_BROOM_VELOC;
         }
     }
 
