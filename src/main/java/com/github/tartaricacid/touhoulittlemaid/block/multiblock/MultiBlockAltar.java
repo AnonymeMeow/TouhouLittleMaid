@@ -1,7 +1,5 @@
 package com.github.tartaricacid.touhoulittlemaid.block.multiblock;
 
-import java.util.HashMap;
-
 import com.github.tartaricacid.touhoulittlemaid.TouhouLittleMaid;
 import com.github.tartaricacid.touhoulittlemaid.api.block.IMultiBlock;
 import com.github.tartaricacid.touhoulittlemaid.init.InitBlocks;
@@ -15,7 +13,6 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -38,7 +35,6 @@ public class MultiBlockAltar implements IMultiBlock {
     @Override
     public boolean isMatch(Level world, BlockPos posStart, Direction direction, StructureTemplate template) {
         StructureTemplate.Palette palette = template.palettes.get(0);
-        HashMap<BlockPos, BlockState> logType = new HashMap<>();
         for (StructureTemplate.StructureBlockInfo blockInfo : palette.blocks()) {
             BlockState worldState = world.getBlockState(posStart.offset(blockInfo.pos()));
             BlockState infoState = blockInfo.state();
