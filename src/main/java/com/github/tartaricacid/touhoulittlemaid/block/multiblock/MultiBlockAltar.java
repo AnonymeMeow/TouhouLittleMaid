@@ -40,21 +40,16 @@ public class MultiBlockAltar implements IMultiBlock {
         StructureTemplate.Palette palette = template.palettes.get(0);
         HashMap<BlockPos, BlockState> logType = new HashMap<>();
         for (StructureTemplate.StructureBlockInfo blockInfo : palette.blocks()) {
-            BlockState blockState = world.getBlockState(posStart.offset(blockInfo.pos()));
-            if (blockInfo.state().is(BlockTags.LOGS)) {
-                BlockPos blockPos = blockInfo.pos().atY(0);
-                if (logType.get(blockPos) != null) {
-                    if (!logType.get(blockPos).equals(blockState)) {
-                        return false;
-                    }
-                } else {
-                    if (blockState.is(BlockTags.LOGS) && blockState.getValue(RotatedPillarBlock.AXIS) == Direction.Axis.Y) {
-                        logType.put(blockPos, blockState);
-                    } else {
-                        return false;
-                    }
+            BlockState worldState = world.getBlockState(posStart.offset(blockInfo.pos()));
+            BlockState infoState = blockInfo.state();
+            // 如果是木头，只检查 tag
+            if (infoState.is(Blocks.OAK_LOG)) {
+                if (!worldState.is(BlockTags.LOGS)) {
+                    return false;
                 }
-            } else if (!blockState.equals(blockInfo.state())) {
+            }
+            // 其他情况照常检查
+            else if (!worldState.equals(infoState)) {
                 return false;
             }
         }
