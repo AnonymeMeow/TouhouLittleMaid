@@ -2,6 +2,7 @@ package com.github.tartaricacid.touhoulittlemaid.client.animation.gecko;
 
 import com.github.tartaricacid.touhoulittlemaid.client.animation.gecko.condition.*;
 import com.github.tartaricacid.touhoulittlemaid.client.entity.GeckoMaidEntity;
+import com.github.tartaricacid.touhoulittlemaid.compat.twilightforest.GeckoGiantEntity;
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
 import com.github.tartaricacid.touhoulittlemaid.geckolib3.core.IAnimatable;
 import com.github.tartaricacid.touhoulittlemaid.geckolib3.core.PlayState;
@@ -15,6 +16,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -61,7 +63,7 @@ public final class AnimationManager {
         }
     }
 
-    public PlayState predicateParallel(AnimationEvent<GeckoMaidEntity> event, String animationName) {
+    public <P extends IAnimatable> PlayState predicateParallel(AnimationEvent<P> event, String animationName) {
         if (Minecraft.getInstance().isPaused()) {
             return PlayState.STOP;
         }
@@ -69,9 +71,15 @@ public final class AnimationManager {
     }
 
     @NotNull
-    public PlayState predicateMain(AnimationEvent<GeckoMaidEntity> event) {
-        EntityMaid maid = event.getAnimatable().getMaid();
-        if (maid == null) {
+    public PlayState predicateMain(AnimationEvent<IAnimatable> event) {
+        IAnimatable animatable = event.getAnimatable();
+        LivingEntity livingEntity = null;
+        if (animatable instanceof GeckoMaidEntity geckoMaidEntity) {
+            livingEntity = geckoMaidEntity.getMaid();
+        } else if (animatable instanceof GeckoGiantEntity geckoGiantEntity) {
+            livingEntity = geckoGiantEntity.getGiant();
+        }
+        if (livingEntity == null) {
             return PlayState.STOP;
         }
         for (int i = Priority.HIGHEST; i <= Priority.LOWEST; i++) {
@@ -80,7 +88,7 @@ public final class AnimationManager {
             }
             LinkedList<AnimationState> states = data.get(i);
             for (AnimationState state : states) {
-                if (state.getPredicate().test(maid, event)) {
+                if (state.getPredicate().test(livingEntity, event)) {
                     String animationName = state.getAnimationName();
                     ILoopType loopType = state.getLoopType();
                     return playAnimation(event, animationName, loopType);

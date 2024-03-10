@@ -4,6 +4,7 @@ import com.github.tartaricacid.touhoulittlemaid.client.entity.GeckoMaidEntity;
 import com.github.tartaricacid.touhoulittlemaid.entity.favorability.Type;
 import com.github.tartaricacid.touhoulittlemaid.entity.item.EntitySit;
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
+import com.github.tartaricacid.touhoulittlemaid.geckolib3.core.IAnimatable;
 import com.github.tartaricacid.touhoulittlemaid.geckolib3.core.builder.ILoopType;
 import com.github.tartaricacid.touhoulittlemaid.geckolib3.core.event.predicate.AnimationEvent;
 import com.github.tartaricacid.touhoulittlemaid.geckolib3.core.molang.LazyVariable;
@@ -15,6 +16,7 @@ import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.item.ItemStack;
@@ -37,7 +39,7 @@ public class AnimationRegister {
         register("bookshelf", Priority.HIGH, (maid, event) -> maid.getVehicle() instanceof EntitySit sit && sit.getJoyType().equals(Type.BOOKSHELF.getTypeName()));
         register("computer", Priority.HIGH, (maid, event) -> maid.getVehicle() instanceof EntitySit sit && sit.getJoyType().equals(Type.COMPUTER.getTypeName()));
         register("keyboard", Priority.HIGH, (maid, event) -> maid.getVehicle() instanceof EntitySit sit && sit.getJoyType().equals(Type.KEYBOARD.getTypeName()));
-        register("sit", Priority.HIGH, (maid, event) -> maid.isInSittingPose());
+        register("sit", Priority.HIGH, (maid, event) -> maid instanceof EntityMaid entityMaid && entityMaid.isInSittingPose());
         register("chair", Priority.HIGH, (maid, event) -> maid.isPassenger());
 
         register("swim_stand", Priority.NORMAL, (maid, event) -> maid.isInWater());
@@ -213,12 +215,12 @@ public class AnimationRegister {
         parser.setValue("tlm.has_backpack", () -> MolangUtils.booleanToFloat(maid.hasBackpack()));
     }
 
-    private static void register(String animationName, ILoopType loopType, int priority, BiPredicate<EntityMaid, AnimationEvent<GeckoMaidEntity>> predicate) {
+    private static void register(String animationName, ILoopType loopType, int priority, BiPredicate<LivingEntity, AnimationEvent<IAnimatable>> predicate) {
         AnimationManager manager = AnimationManager.getInstance();
         manager.register(new AnimationState(animationName, loopType, priority, predicate));
     }
 
-    private static void register(String animationName, int priority, BiPredicate<EntityMaid, AnimationEvent<GeckoMaidEntity>> predicate) {
+    private static void register(String animationName, int priority, BiPredicate<LivingEntity, AnimationEvent<IAnimatable>> predicate) {
         register(animationName, ILoopType.EDefaultLoopTypes.LOOP, priority, predicate);
     }
 
