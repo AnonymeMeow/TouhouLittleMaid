@@ -127,6 +127,27 @@ public class EntityBroom extends AbstractEntityFromItem implements OwnableEntity
     }
 
     @Override
+    protected void tickRidden(Player player, Vec3 pTravelVector) {
+        // 记得将 fall distance 设置为 0，否则会摔死
+        this.resetFallDistance();
+
+        // 施加上下晃动
+        if (!this.onGround()) {
+            this.addDeltaMovement(new Vec3(0, 0.01 * Math.sin(this.tickCount * Math.PI / 18), 0));
+        }
+
+        // 与旋转有关系的一堆东西，用来控制扫帚朝向
+        this.yRotO = this.yBodyRot = this.yHeadRot = this.getYRot();
+        this.setRot(player.getYRot(), player.getXRot());
+        super.tickRidden(player, pTravelVector);
+    }
+
+    @Override
+    protected Vec3 getRiddenInput(Player player, Vec3 travelVector) {
+        return travelVector;
+    }
+
+    @Override
     protected void pushEntities() {
         // 已经坐满两人，不执行
         if (this.getPassengers().size() >= 2) {
@@ -152,22 +173,6 @@ public class EntityBroom extends AbstractEntityFromItem implements OwnableEntity
             return maidOwnerUUID.equals(broomOwnerUUID);
         }
         return false;
-    }
-
-    @Override
-    protected void tickRidden(Player player, Vec3 pTravelVector) {
-        // 记得将 fall distance 设置为 0，否则会摔死
-        this.fallDistance = 0;
-
-        // 施加上下晃动
-        if (!this.onGround()) {
-            this.addDeltaMovement(new Vec3(0, 0.01 * Math.sin(this.tickCount * Math.PI / 18), 0));
-        }
-
-        // 与旋转有关系的一堆东西，用来控制扫帚朝向
-        this.yRotO = this.yBodyRot = this.yHeadRot = this.getYRot();
-        this.setRot(player.getYRot(), player.getXRot());
-        super.tickRidden(player, pTravelVector);
     }
 
     @Override
