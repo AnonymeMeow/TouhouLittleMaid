@@ -2,6 +2,8 @@ package com.github.tartaricacid.touhoulittlemaid.entity.item;
 
 import com.github.tartaricacid.touhoulittlemaid.entity.passive.EntityMaid;
 import com.github.tartaricacid.touhoulittlemaid.init.InitItems;
+import com.github.tartaricacid.touhoulittlemaid.init.InitKeyBindings;
+import com.github.tartaricacid.touhoulittlemaid.network.message.DismountBroomPackage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -24,6 +26,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -46,6 +49,8 @@ public class EntityBroom extends AbstractEntityFromItem implements OwnableEntity
     private boolean keyBack = false;
     private boolean keyLeft = false;
     private boolean keyRight = false;
+    private boolean keyUp = false;
+    private boolean keyDown = false;
 
     public EntityBroom(EntityType<EntityBroom> entityType, Level worldIn) {
         super(entityType, worldIn);
@@ -107,20 +112,27 @@ public class EntityBroom extends AbstractEntityFromItem implements OwnableEntity
                 keyBack = keyBack();
                 keyLeft = keyLeft();
                 keyRight = keyRight();
+                keyUp = InitKeyBindings.UP.get().isDown();
+                keyDown = InitKeyBindings.DOWN.get().isDown();
             }
 
             // 按键控制扫帚各个方向速度
-            float strafe = keyLeft ? 0.5f : (keyRight ? -0.5f : 0);
-            float vertical = keyForward ? -(player.getXRot() - 10) / 22.5f : 0;
-            float forward = keyForward ? 3 : (keyBack ? -0.5f : 0);
+            float strafe = (keyLeft ? 0.5f : 0) - (keyRight ? 0.5f : 0);
+            float vertical = (keyUp ? 0.5f : 0) - (keyDown ? 0.5f : 0);
+            float forward = keyForward ? (keyBack ? 0 : 3f) : (keyBack ? -0.5f : 0);
 
             this.moveRelative(0.02f, new Vec3(strafe, vertical, forward));
             this.move(MoverType.SELF, this.getDeltaMovement());
             return;
         }
-        if (!this.onGround()) {
+        if (!(this.getControllingPassenger() instanceof Player)) {
             // 玩家没有坐在扫帚上，那就让它掉下来
-            super.travel(new Vec3(0, -0.3f, 0));
+            Optional<Entity> entityOptional = this.getPassengers().stream().filter(passenger -> passenger instanceof EntityMaid).findFirst();
+            if (entityOptional.isPresent() && entityOptional.get() instanceof EntityMaid maid) {
+                super.travel(new Vec3(0, -maid.getFavorabilityManager().getGravity(), 0));
+                return;
+            }
+            super.travel(new Vec3(0, -0.2, 0));
             return;
         }
         super.travel(vec3);
@@ -131,6 +143,12 @@ public class EntityBroom extends AbstractEntityFromItem implements OwnableEntity
         // 记得将 fall distance 设置为 0，否则会摔死
         this.resetFallDistance();
 
+        if (player.isLocalPlayer()) {
+            if (InitKeyBindings.DISMOUNT.get().isDown()) {
+                PacketDistributor.sendToServer(DismountBroomPackage.INSTANCE);
+            }
+        }
+
         // 施加上下晃动
         if (!this.onGround()) {
             this.addDeltaMovement(new Vec3(0, 0.01 * Math.sin(this.tickCount * Math.PI / 18), 0));
@@ -140,11 +158,6 @@ public class EntityBroom extends AbstractEntityFromItem implements OwnableEntity
         this.yRotO = this.yBodyRot = this.yHeadRot = this.getYRot();
         this.setRot(player.getYRot(), player.getXRot());
         super.tickRidden(player, pTravelVector);
-    }
-
-    @Override
-    protected Vec3 getRiddenInput(Player player, Vec3 travelVector) {
-        return travelVector;
     }
 
     @Override
@@ -173,6 +186,11 @@ public class EntityBroom extends AbstractEntityFromItem implements OwnableEntity
             return maidOwnerUUID.equals(broomOwnerUUID);
         }
         return false;
+    }
+
+    @Override
+    public Vec3 getDismountLocationForPassenger(LivingEntity passenger) {
+        return new Vec3(this.getX(), this.getBoundingBox().maxY + 0.25, this.getZ());
     }
 
     @Override

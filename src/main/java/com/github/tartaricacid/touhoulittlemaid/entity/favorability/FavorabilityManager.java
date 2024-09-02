@@ -48,6 +48,11 @@ public class FavorabilityManager {
     private static final double LEVEL_2_SWEEP_RANGE = 3;
     private static final double LEVEL_3_SWEEP_RANGE = 4;
 
+    private static final double LEVEL_0_GRAVITY = 0.15;
+    private static final double LEVEL_1_GRAVITY = 0.1;
+    private static final double LEVEL_2_GRAVITY = 0.05;
+    private static final double LEVEL_3_GRAVITY = 0.0;
+
     private static final String TAG_NAME = "FavorabilityManagerCounter";
 
     private final Map<String, Time> counter;
@@ -141,37 +146,21 @@ public class FavorabilityManager {
     }
 
     public int getHealthByLevel(int level) {
-        switch (level) {
-            case LEVEL_1 -> {
-                return LEVEL_1_HEALTH;
-            }
-            case LEVEL_2 -> {
-                return LEVEL_2_HEALTH;
-            }
-            case LEVEL_3 -> {
-                return LEVEL_3_HEALTH;
-            }
-            default -> {
-                return LEVEL_0_HEALTH;
-            }
-        }
+        return switch (level) {
+            case LEVEL_1 -> LEVEL_1_HEALTH;
+            case LEVEL_2 -> LEVEL_2_HEALTH;
+            case LEVEL_3 -> LEVEL_3_HEALTH;
+            default -> LEVEL_0_HEALTH;
+        };
     }
 
     public int getAttackByLevel(int level) {
-        switch (level) {
-            case LEVEL_1 -> {
-                return LEVEL_1_ATTACK_DAMAGE;
-            }
-            case LEVEL_2 -> {
-                return LEVEL_2_ATTACK_DAMAGE;
-            }
-            case LEVEL_3 -> {
-                return LEVEL_3_ATTACK_DAMAGE;
-            }
-            default -> {
-                return LEVEL_0_ATTACK_DAMAGE;
-            }
-        }
+        return switch (level) {
+            case LEVEL_1 -> LEVEL_1_ATTACK_DAMAGE;
+            case LEVEL_2 -> LEVEL_2_ATTACK_DAMAGE;
+            case LEVEL_3 -> LEVEL_3_ATTACK_DAMAGE;
+            default -> LEVEL_0_ATTACK_DAMAGE;
+        };
     }
 
     public int getAttackDistanceByPoint(int favorability) {
@@ -199,25 +188,26 @@ public class FavorabilityManager {
         }
     }
 
+    public double getGravity() {
+        return switch (getLevel()) {
+            case LEVEL_1 -> LEVEL_1_GRAVITY;
+            case LEVEL_2 -> LEVEL_2_GRAVITY;
+            case LEVEL_3 -> LEVEL_3_GRAVITY;
+            default -> LEVEL_0_GRAVITY;
+        };
+    }
+
     private AABB sweepRangeTransform(AABB boundingBox, double range) {
         return boundingBox.inflate(range, Math.max(range / 4, 0.25), range);
     }
 
     public int getPointByLevel(int level) {
-        switch (level) {
-            case LEVEL_1 -> {
-                return LEVEL_1_POINT;
-            }
-            case LEVEL_2 -> {
-                return LEVEL_2_POINT;
-            }
-            case LEVEL_3 -> {
-                return LEVEL_3_POINT;
-            }
-            default -> {
-                return LEVEL_0_POINT;
-            }
-        }
+        return switch (level) {
+            case LEVEL_1 -> LEVEL_1_POINT;
+            case LEVEL_2 -> LEVEL_2_POINT;
+            case LEVEL_3 -> LEVEL_3_POINT;
+            default -> LEVEL_0_POINT;
+        };
     }
 
     public void add(int addPoint) {
